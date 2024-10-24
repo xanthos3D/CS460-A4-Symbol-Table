@@ -1180,28 +1180,9 @@ void Parser::identifier_list() {
     //if we find, a identifier, or a data type
     if(tokenVector[index].isIdentifier()){
 
-        //special case if we have multiple declarations in one line, then we need to 
-        /*if(new_symbol_table.isParamList == false){
-
-            new_symbol_table.identifier_type = tokenVector[index].getTokenString();
-            //set scope of variable
-            new_symbol_table.scope = scope;
-
-            //set the paramfunction identifier for param symbol.
-            new_symbol_table.identifier_name = tempFunctionName;
-
-            //set the paramfunction identifier for param symbol.
-            new_symbol_table.isParamList = true;
-
-            //save symbol parameter to our vector
-            tempParamList.push_back(new_symbol_table);
-
-            //clear the vector
-            SymbolTable empty_symbol_table;
-            new_symbol_table = empty_symbol_table;
-        }*/
-
-
+        new_symbol_table.identifier_name = tokenVector[index].getTokenString();
+        symbol_table_list.insertSymbol(new_symbol_table);
+       
         //eat that value
         expect(tokenVector[index].getTokenString());
 
