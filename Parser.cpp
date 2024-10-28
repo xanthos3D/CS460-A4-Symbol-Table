@@ -423,6 +423,8 @@ Checks declaration_statement meets BNF requirements
 @pre:
 @post:
  *****************************************************************************************/
+//if scope is 0 and name is already taken then error for being defined globally
+//if scope is greater than 0 and name is already taken then error for being defined locally
 void Parser::declaration_statement(){
     std::cout<<"in declaration_statement"<<std::endl;
     //if we recieve a specifier(data type)
@@ -432,10 +434,27 @@ void Parser::declaration_statement(){
         new_symbol_table.datatype = tokenVector[index].getTokenString();
         new_symbol_table.identifier_type = "datatype";
 
-        expect( tokenVector[index].getTokenString() );
+        expect( tokenVector[index].getTokenString());
 
         //then we expect an identifier after it.
         if (tokenVector[index].isIdentifier()) {
+            //loop through takenNames to see if name has been used try to also determine if
+            //defined locally or globally
+            for(int i = 0; i < takenNames.size(); i++){
+                if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == 0){
+                    std::cerr << "Error found: tokenVector[index] " << tokenVector[index].getTokenString() << " in scope "
+                    << scope << " is the same as takenNames[i] " << takenNames[i].first << " in scope " << takenNames[i].second
+                    << " defined globally" << std::endl;
+                    exit(1);
+                }
+                else if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == scope){
+                    std::cerr << "Error found: tokenVector[index] " << tokenVector[index].getTokenString() << " in scope "
+                    << scope <<" is the same as takenNames[i] " << takenNames[i].first << " in scope " << takenNames[i].second
+                    << " defined locally" << std::endl;
+                    exit(1);
+                }
+            }
+            takenNames.push_back(std::make_pair(tokenVector[index].getTokenString(), scope));
             new_symbol_table.identifier_name = tokenVector[index].getTokenString();
             std::cout<<"found identifier after a data specifier."<<std::endl;  
             identifier();
@@ -465,7 +484,7 @@ void Parser::declaration_statement(){
     //if we see a comma after ward, that means that multiple things are being declared
     if ( tokenVector[index].isComma()){
         expect(",");
-        std::cout<<"found a comma now gonig into identifier_and_identifier_array_list."<<std::endl;
+        std::cout<<"found a comma now going into identifier_and_identifier_array_list."<<std::endl;
         identifier_and_identifier_array_list();
     }
     //expect statement to end with a semicolon.

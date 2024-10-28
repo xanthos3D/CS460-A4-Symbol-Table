@@ -91,8 +91,8 @@ private:
     std::vector<std::vector<SymbolTable>> paramLists;
     //temp vector to store the params of each function that will be added to the paramlists.
     std::vector<SymbolTable> tempParamList;
-
-
+    //list of names used already and their scope
+    std::vector<std::pair<std::string, int>> takenNames;
     std::string tempFunctionName = "";
 };
 
