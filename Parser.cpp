@@ -442,18 +442,17 @@ void Parser::declaration_statement(){
             //defined locally or globally
             for(int i = 0; i < takenNames.size(); i++){
                 if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == 0){
-                    std::cerr << "Error found: tokenVector[index] " << tokenVector[index].getTokenString() << " in scope "
-                    << scope << " is the same as takenNames[i] " << takenNames[i].first << " in scope " << takenNames[i].second
-                    << " defined globally" << std::endl;
+                    std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
+                    << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined globally" << std::endl;
                     exit(1);
                 }
                 else if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == scope){
-                    std::cerr << "Error found: tokenVector[index] " << tokenVector[index].getTokenString() << " in scope "
-                    << scope <<" is the same as takenNames[i] " << takenNames[i].first << " in scope " << takenNames[i].second
-                    << " defined locally" << std::endl;
+                    std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
+                    << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined locally" << std::endl;
                     exit(1);
                 }
             }
+            //add name and scope to vector for later checks
             takenNames.push_back(std::make_pair(tokenVector[index].getTokenString(), scope));
             new_symbol_table.identifier_name = tokenVector[index].getTokenString();
             std::cout<<"found identifier after a data specifier."<<std::endl;  
