@@ -35,8 +35,10 @@ void Parser::program() {
         //std::cout<<"+++block start token++++++++++++++++++++++++++++++++++++++++++ "<<std::endl;
         if (tokenVector[index].getTokenString() == "function") {
             //std::cout<<" found function declaration" <<std::endl;
+            inDeclaration = true;
             function_declaration();
-        } else if (tokenVector[index].getTokenString() == "procedure") {
+            inDeclaration = false;
+        } else if (tokenVector[index].getTokenString() == "procedure" && tokenVector[index + 1].getTokenString() != "main") {
             //std::cout<<" found  procedure declaration " <<std::endl;
             procedure_declaration();
         } else if ( datatype_specifier() ) {
@@ -47,10 +49,10 @@ void Parser::program() {
             declaration_statement();
             inDeclaration = false;
             scope = temp;
-        }else if (tokenVector[index].getTokenString() == "procedure") { //needs  to be fixed to distinguish between procedure and procedure main
+        } else if (tokenVector[index].getTokenString() == "procedure" && tokenVector[index + 1].getTokenString() == "main") { //needs  to be fixed to distinguish between procedure and procedure main
             //std::cout<<" found main procedure" <<std::endl;
             main_procedure();
-        }else{
+        } else{
             //something wrong
             //std::cout<<"looked for declaration of function or procedure, but none found?"<<std::endl;
             std::cout<<"offending token:"<<std::endl;
@@ -177,6 +179,8 @@ Checks procedure_declaration meets BNF requirements
 @post:
  *****************************************************************************************/
 void Parser::procedure_declaration(){
+//    SymbolTable empty_symbol_table;
+//    new_symbol_table = empty_symbol_table;
     scope++;
     //SymbolTable new_symbol_table;
     new_symbol_table.scope = scope;
@@ -185,6 +189,13 @@ void Parser::procedure_declaration(){
     expect( "procedure");
     if ( tokenVector[index].isIdentifier() ) {
         new_symbol_table.identifier_name = tokenVector[index].getTokenString();
+        tempFunctionName = tokenVector[index].getTokenString();
+        // add the new symbol to our table
+        std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
+        symbol_table_list.insertSymbol( new_symbol_table );
+        //clear the temp symbol table element in our parser class.
+//        //SymbolTable empty_symbol_table;
+//        new_symbol_table = empty_symbol_table;
         expect(tokenVector[index].getTokenString());
     }
     expect( "(" );
@@ -193,10 +204,15 @@ void Parser::procedure_declaration(){
     } else {
 
         parameter_list();
+        //now that we have eaten all our params and put them in paramlists
+        paramLists.push_back(tempParamList);
+
+        // after the params are added we want to clear our temp vector storing our params.
+        tempParamList.clear();
     }
     // add the new symbol to our table
-    std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
-    symbol_table_list.insertSymbol( new_symbol_table );
+//    std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
+//    symbol_table_list.insertSymbol( new_symbol_table );
     //clear the temp symbol table element in our parser class.
     SymbolTable empty_symbol_table;
     new_symbol_table = empty_symbol_table;
@@ -216,9 +232,11 @@ checks that the parameter lsit  follows BNF rules
 @post:generates cst for parameters
  *****************************************************************************************/
 void Parser::parameter_list(){
-
+    //used to revert to incoming value of inDeclaration
+    bool revertTo = inDeclaration;
     //if we find a data type
     if ( datatype_specifier() ){
+        inDeclaration = true;
         //set data type of paramlist symboltable to this data type.
         new_symbol_table.datatype = tokenVector[index].getTokenString();
         //call expect with that data type
@@ -277,6 +295,8 @@ void Parser::parameter_list(){
         SymbolTable empty_symbol_table;
         new_symbol_table = empty_symbol_table;
     }
+
+    inDeclaration = revertTo;
 }
 
 
@@ -429,7 +449,9 @@ void Parser::declaration_statement(){
     //if we see a left bracket we are declaring an array
     if ( tokenVector[index].isLBracket()){
         identifier_and_identifier_array_list();
-        new_symbol_table.DATATYPE_IS_ARRAY = "yes";
+        if (inDeclaration) {
+            new_symbol_table.DATATYPE_IS_ARRAY = "yes";
+        }
     }
 
     // add the symbol but dont clear the temp data, as we may have more to add if there is a comma, but dont want to clear the values being declared.
@@ -1161,8 +1183,9 @@ void Parser::identifier_and_identifier_array_list() {
     //after that identifier is there was one, or if we dont hav to worry about one
     //do we have a bracket, if so then we have a array, go to that function logic
     if ( tokenVector[index].isLBracket()) {
-
-        new_symbol_table.DATATYPE_IS_ARRAY = "yes";
+        if (inDeclaration) {
+            new_symbol_table.DATATYPE_IS_ARRAY = "yes";
+        }
         identifier_array_list();
 
         //otherwise if its a open paren then we have a function call
@@ -1249,11 +1272,15 @@ void Parser::identifier_array_list() {
     }
         //then we expect either an int which we eat
     else if (tokenVector[index].isInt()) {
-        new_symbol_table.datatype_array_size = tokenVector[index].getTokenString();
+        if (inDeclaration) {
+            new_symbol_table.datatype_array_size = tokenVector[index].getTokenString();
+        }
         expect(tokenVector[index].getTokenString());
         //or an identifier that we eat
     }else if(tokenVector[index].isIdentifier()){
-        new_symbol_table.datatype_array_size = tokenVector[index].getTokenString();
+        if (inDeclaration) {
+            new_symbol_table.datatype_array_size = tokenVector[index].getTokenString();
+        }
         expect(tokenVector[index].getTokenString());
     }
     //then we expect a closing bracket

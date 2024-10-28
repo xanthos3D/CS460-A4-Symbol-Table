@@ -37,6 +37,7 @@ public:
 
 private:
     SymbolNode* head;
+    std::string nameOfParameter = "";
 
     void PrintSymbolTableListHelper(SymbolNode *head);
 };
