@@ -43,7 +43,9 @@ void Parser::program() {
             //std::cout<<" found  declaration statement " <<std::endl;
             int temp = scope;
             scope = 0;
+            inDeclaration = true;
             declaration_statement();
+            inDeclaration = false;
             scope = temp;
         }else if (tokenVector[index].getTokenString() == "procedure") { //needs  to be fixed to distinguish between procedure and procedure main
             //std::cout<<" found main procedure" <<std::endl;
@@ -63,6 +65,7 @@ void Parser::program() {
     for(int i=0; i < paramLists.size(); i++){
         for(int j= 0; j < paramLists[i].size(); j++){
             std::cout<< "found param: " << paramLists[i][j].identifier_type <<std::endl;
+
             symbol_table_list.insertSymbol(paramLists[i][j]);
         }
     }
@@ -87,6 +90,7 @@ void Parser::main_procedure(){
 
     new_symbol_table.identifier_name = tokenVector[index].getTokenString();
     expect("main");
+    std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
      symbol_table_list.insertSymbol( new_symbol_table );
     //clear the temp symbol table element in our parser class.
     SymbolTable empty_symbol_table;
@@ -143,6 +147,7 @@ void Parser::function_declaration(){
         expect("void");
     } else {
         // add the new symbol to our table
+        std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
         symbol_table_list.insertSymbol( new_symbol_table );
         //clear the temp symbol table element in our parser class.
         SymbolTable empty_symbol_table;
@@ -190,6 +195,7 @@ void Parser::procedure_declaration(){
         parameter_list();
     }
     // add the new symbol to our table
+    std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
     symbol_table_list.insertSymbol( new_symbol_table );
     //clear the temp symbol table element in our parser class.
     SymbolTable empty_symbol_table;
@@ -327,25 +333,25 @@ void Parser::statement(){
 
     //cases to recurse through a variety of different statements.
     if (token.getTokenString() == "return"){
-        //std::cout<<"return found"<<std::endl;
+        std::cout<<"return found"<<std::endl;
         return_statement();
     }else if ( token.getTokenString() == "if"){
-        //std::cout<<"if found"<<std::endl;
+        std::cout<<"if found"<<std::endl;
         selection_statement();
     }else if (token.getTokenString() == "else"){
-        //std::cout<<"else found"<<std::endl;
+        std::cout<<"else found"<<std::endl;
         selection_statement();
     }else if (token.getTokenString() == "printf"){
-        //std::cout<<"printf found"<<std::endl;
+        std::cout<<"printf found"<<std::endl;
         printf_statement();
     }else if (token.getTokenString() == "for" || token.getTokenString() == "while"){
-        //std::cout<<"for/while found"<<std::endl;
+        std::cout<<"for/while found"<<std::endl;
         iteration_statement();
     } else if ((token.isIdentifier() && tokenVector[index + 1].isAssignmentOperator()) ||
                (token.isIdentifier() && tokenVector[index + 1].isLBracket()) ||
                (token.isIdentifier() && tokenVector[index + 1].isLParen())){
         if (tokenVector[index + 1].isAssignmentOperator() || token.isIdentifier() && tokenVector[index + 1].isLBracket()) {
-            //std::cout << "assignment found" << std::endl;
+            std::cout << "assignment found" << std::endl;
             assignment_statement();
         }else if (tokenVector[index + 1].isLParen()){
             //std::cout << "user defined func found" << std::endl;
@@ -356,7 +362,12 @@ void Parser::statement(){
         //case which handles variable declarizations and assignments.
     } else if ( datatype_specifier() || token.isIdentifier() ) {
         std::cout<<"declaration found: "<< token.getTokenString()<<std::endl;
+        if(datatype_specifier()){
+            token.print();
+            inDeclaration = true;  
+        }
         declaration_statement();
+        inDeclaration = false;
     }else{
         std::cout<<"error?"<<std::endl;
     }
@@ -406,7 +417,7 @@ void Parser::declaration_statement(){
         //then we expect an identifier after it.
         if (tokenVector[index].isIdentifier()) {
             new_symbol_table.identifier_name = tokenVector[index].getTokenString();
-            std::cout<<"found identifier after a data specifier."<<std::endl;
+            std::cout<<"found identifier after a data specifier."<<std::endl;  
             identifier();
             //double check this
             //expect(tokenVector[index].getTokenString());
@@ -422,7 +433,12 @@ void Parser::declaration_statement(){
     }
 
     // add the symbol but dont clear the temp data, as we may have more to add if there is a comma, but dont want to clear the values being declared.
-    symbol_table_list.insertSymbol(new_symbol_table);
+    if(inDeclaration == true){
+        std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
+        symbol_table_list.insertSymbol(new_symbol_table);
+    }else{
+        std::cout<<"found symbol but not inserting: "<<new_symbol_table.identifier_name <<std::endl;
+    }
 
     //if we see a comma after ward, that means that multiple things are being declared
     if ( tokenVector[index].isComma()){
@@ -438,6 +454,7 @@ void Parser::declaration_statement(){
         //clear the vectorafter we are done with declaration
         SymbolTable empty_symbol_table;
         new_symbol_table = empty_symbol_table;
+        inDeclaration = false;
         expect(";");
     }
 }
@@ -657,7 +674,7 @@ checks that the follwoing statement is a initialization expression that follows 
 @post:
  *****************************************************************************************/
 void Parser::expression(){
-    //std::cout<<"in expression"<<std::endl;
+    std::cout<<"in expression"<<std::endl;
     //if we find a token to be true or false boolean then
     if (tokenVector[index].isBoolTrue() || tokenVector[index].isBoolFalse() ) {
         //call our boolean expression code
@@ -704,14 +721,14 @@ void Parser::expression(){
         return;
         //if we find a identifier and therei s a demicolon agter it
     }else if (tokenVector[index].isIdentifier() && ( ( tokenVector[index + 1].isSemicolon() ) )) {
-        //std::cout<<"in expression, expecting function with paren"<<std::endl;
+        std::cout<<"in expression, expecting function with paren"<<std::endl;
         //expect the identifier and then return
         expect( tokenVector[index].getTokenString() );
         return;
         //if we find a identifier and a bracket after it.
     }else if (tokenVector[index].isIdentifier() && ( ( tokenVector[index + 1].isLBracket()))) {
         //then we found an array and expect it to close properly
-        //std::cout<<"in expression, expecting function with bracket so array"<<std::endl;
+        std::cout<<"in expression, expecting function with bracket so array"<<std::endl;
         //eat the identifier
         expect( tokenVector[index].getTokenString() );
 
@@ -778,8 +795,7 @@ checks that the follwoing expression is a boolean expression that follows BNF ru
 @post: creates cst expression for boolean
  *****************************************************************************************/
 void Parser::boolean_expression(){
-
-    //std::cout<<"in boolean_expression"<<std::endl;
+    std::cout<<"in boolean_expression"<<std::endl;
     // if we find keyword true or false
     if (tokenVector[index].isBoolTrue()){
         expect( "TRUE");
@@ -907,7 +923,7 @@ checks that the follwoing expression is a numerical expression that follows BNF 
 @post:
  *****************************************************************************************/
 void Parser::numerical_expression() {
-    //std::cout<<"in numerical_expression"<<std::endl;
+    std::cout<<"in numerical_expression"<<std::endl;
 
     bool eat = true;
     while(eat){
@@ -955,7 +971,7 @@ checks if token is a relational_expression
 @post:
  *****************************************************************************************/
 bool Parser::relational_expression(){
-    //std::cout<<"in relational_expression/boolean_operator"<<std::endl;
+    std::cout<<"in relational_expression/boolean_operator"<<std::endl;
     if (tokenVector[index].isBoolE()){
         expect("==");
         return true;
@@ -1118,7 +1134,7 @@ checks if token is followed by identifier list or array lsit
 @post:
  *****************************************************************************************/
 void Parser::identifier_and_identifier_array_list() {
-    //std::cout<<"in identifier_and_identifier_array_list"<<std::endl;
+    std::cout<<"in identifier_and_identifier_array_list"<<std::endl;
     if (tokenVector[index].isInt()){
         index -= 2;
     }
@@ -1132,7 +1148,12 @@ void Parser::identifier_and_identifier_array_list() {
         //if there are multiple values being declared on one line this should cover it
         //ex int 1,j,k;
         new_symbol_table.identifier_name = tokenVector[index].getTokenString();
-        symbol_table_list.insertSymbol(new_symbol_table);
+        if(inDeclaration == true){
+            std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
+            symbol_table_list.insertSymbol(new_symbol_table);
+        }else{
+            std::cout<<"not in declaration so didnt add symbol: "<<new_symbol_table.identifier_name <<std::endl;
+        }
        
         expect(tokenVector[index].getTokenString());
     }
@@ -1175,13 +1196,17 @@ checks identifier  list follows BNF rules
 @post:
  *****************************************************************************************/
 void Parser::identifier_list() {
-    //std::cout<<"in identifier list"<<std::endl;
+    std::cout<<"in identifier list"<<std::endl;
 
     //if we find, a identifier, or a data type
     if(tokenVector[index].isIdentifier()){
 
         new_symbol_table.identifier_name = tokenVector[index].getTokenString();
+        std::cout<<"inserting symbol: "<<new_symbol_table.identifier_name <<std::endl;
+
+        if(inDeclaration == true){
         symbol_table_list.insertSymbol(new_symbol_table);
+        }
        
         //eat that value
         expect(tokenVector[index].getTokenString());

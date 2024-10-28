@@ -75,6 +75,7 @@ private:
     int  scope = 0;
     bool newStatement = false;
     bool inForLoop = false;
+    bool inDeclaration = false;
     //vector passed in on declaration
     std::vector<Token> tokenVector;
     //concrete syntax tree object
@@ -90,6 +91,7 @@ private:
     std::vector<std::vector<SymbolTable>> paramLists;
     //temp vector to store the params of each function that will be added to the paramlists.
     std::vector<SymbolTable> tempParamList;
+
 
     std::string tempFunctionName = "";
 };
