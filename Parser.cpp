@@ -232,6 +232,7 @@ checks that the parameter lsit  follows BNF rules
 @post:generates cst for parameters
  *****************************************************************************************/
 void Parser::parameter_list(){
+    inParamList = true;
     //used to revert to incoming value of inDeclaration
     bool revertTo = inDeclaration;
     //if we find a data type
@@ -294,6 +295,7 @@ void Parser::parameter_list(){
         //clear the vector
         SymbolTable empty_symbol_table;
         new_symbol_table = empty_symbol_table;
+        inParamList = false;
     }
 
     inDeclaration = revertTo;
@@ -438,22 +440,6 @@ void Parser::declaration_statement(){
 
         //then we expect an identifier after it.
         if (tokenVector[index].isIdentifier()) {
-            //loop through takenNames to see if name has been used try to also determine if
-            //defined locally or globally
-            for(int i = 0; i < takenNames.size(); i++){
-                if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == 0){
-                    std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
-                    << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined globally" << std::endl;
-                    exit(1);
-                }
-                else if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == scope){
-                    std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
-                    << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined locally" << std::endl;
-                    exit(1);
-                }
-            }
-            //add name and scope to vector for later checks
-            takenNames.push_back(std::make_pair(tokenVector[index].getTokenString(), scope));
             new_symbol_table.identifier_name = tokenVector[index].getTokenString();
             std::cout<<"found identifier after a data specifier."<<std::endl;  
             identifier();
@@ -1306,7 +1292,11 @@ void Parser::identifier_array_list() {
 
     //recursively call our array if there is an extra dimension to our array.
     if ( tokenVector[index].isComma() ) {
-        identifier_array_list();
+        if (inParamList){
+            return;
+        }else {
+            identifier_array_list();
+        }
     }
     //std::cout<<" ending identifier_array_list"<<std::endl;
 }
@@ -1328,6 +1318,22 @@ void Parser::identifier(){
         throw std::runtime_error("Syntax error on line " + std::to_string(tokenVector[index].getLineNum()) + ": reserved word \"" +
                                  tokenVector[index].getTokenString() + "\" cannot be used for the name of a variable.");
     }
+    //loop through takenNames to see if name has been used try to also determine if
+    //defined locally or globally
+    for(int i = 0; i < takenNames.size(); i++){
+        if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == 0){
+            std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
+                      << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined globally" << std::endl;
+            exit(1);
+        }
+        else if(takenNames[i].first == tokenVector[index].getTokenString() && takenNames[i].second == scope){
+            std::cerr << "Error on line " << std::to_string(tokenVector[index].getLineNum())
+                      << ": variable \"" << tokenVector[index].getTokenString() << "\" is already defined locally" << std::endl;
+            exit(1);
+        }
+    }
+    //add name and scope to vector for later checks
+    takenNames.push_back(std::make_pair(tokenVector[index].getTokenString(), scope));
     expect( tokenVector[index].getTokenString() );
 }
 

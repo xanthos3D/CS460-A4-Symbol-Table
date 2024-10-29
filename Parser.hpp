@@ -76,6 +76,7 @@ private:
     bool newStatement = false;
     bool inForLoop = false;
     bool inDeclaration = false;
+    bool inParamList = false;
     //vector passed in on declaration
     std::vector<Token> tokenVector;
     //concrete syntax tree object
